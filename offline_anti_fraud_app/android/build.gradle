@@ -1,0 +1,27 @@
+allprojects {
+    repositories {
+        // Google Maven仓库
+        google()
+        // JCenter仓库
+        jcenter()
+        // 国内镜像源，加速下载
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        // 添加Microsoft Maven仓库用于ONNX Runtime
+        maven { url 'https://pkgs.dev.azure.com/onnxruntime/onnxruntime/_packaging/onnxruntime-maven/maven/v1' }
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

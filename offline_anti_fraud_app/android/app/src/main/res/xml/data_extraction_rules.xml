@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- 包含需要云端备份的数据 -->
+        <include domain="sharedpref" path="user_preferences.xml" />
+        <include domain="database" path="app_database.db" />
+        
+        <!-- 排除敏感数据不进行备份 -->
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+        <exclude domain="sharedpref" path="emergency_contacts.xml" />
+    </cloud-backup>
+    
+    <device-transfer>
+        <!-- 设备传输时的包含规则 -->
+        <include domain="sharedpref" path="user_preferences.xml" />
+        <include domain="database" path="app_database.db" />
+        
+        <!-- 排除敏感数据 -->
+        <exclude domain="sharedpref" path="auth_tokens.xml" />
+    </device-transfer>
+</data-extraction-rules>

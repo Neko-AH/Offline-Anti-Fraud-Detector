@@ -1,0 +1,121 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
+if (flutterVersionCode == null) {
+    flutterVersionCode = "1"
+}
+
+def flutterVersionName = localProperties.getProperty("flutter.versionName")
+if (flutterVersionName == null) {
+    flutterVersionName = "1.0"
+}
+
+android {
+    namespace = "com.example.offline_anti_fraud_app"
+    compileSdk = 34  // 支持Android 14
+    ndkVersion = "25.1.8937393"  // 指定NDK版本以避免兼容性问题
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId = "com.example.offline_anti_fraud_app"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
+        minSdk = 26  // 支持Android 8.0 (Oreo)及以上版本
+        targetSdk = 34  // 目标Android 14
+        versionCode = flutterVersionCode.toInteger()
+        versionName = flutterVersionName
+        
+        // 多 Dex支持，避免65K方法限制
+        multiDexEnabled true
+        
+        // 指定支持的ABI架构，与ONNX Runtime jar文件中的架构匹配
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+        }
+    }
+
+    buildTypes {
+        release {
+            // 启用代码混淆，但禁用资源压缩，避免移除必要的模型资源
+            minifyEnabled true
+            shrinkResources false // 禁用资源压缩，避免移除模型文件
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro' // 使用基础的proguard规则，避免过度优化
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig = signingConfigs.debug
+        }
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
+    }
+
+    // 打包选项，解决重复库问题
+    packagingOptions {
+        pickFirst 'lib/x86/libc++_shared.so'
+        pickFirst 'lib/x86_64/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        // 处理ONNX Runtime native库
+        pickFirst 'ai/onnxruntime/native/**/libonnxruntime4j_jni.so'
+        pickFirst 'ai/onnxruntime/native/**/libonnxruntime.so'
+        // 允许从jar文件中提取native库
+        doNotStrip '**/*.so'
+    }
+    
+    // 简化处理：不再尝试提取native库，直接使用ONNX Runtime jar文件
+    // 确保在FraudDetectionService.java中正确处理库加载
+
+    // Lint选项
+    lintOptions {
+        disable 'InvalidPackage'
+        checkReleaseBuilds false
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    // 添加multidex支持，用于兼容低版本Android
+    implementation 'androidx.multidex:multidex:2.0.1'
+    // 添加核心AndroidX支持库
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    // WebSocket客户端依赖
+    implementation 'org.java-websocket:Java-WebSocket:1.5.6'
+    // JSON处理依赖
+    implementation 'org.json:json:20230227'
+    // ONNX Runtime依赖：使用主流架构的库，覆盖大部分设备
+    // 只保留arm64-v8a和armeabi-v7a，覆盖95%以上的Android设备
+    // 注意：每个jar文件包含了特定架构的native库和Java类，所以只能选择一个
+    // 这里我们选择arm64-v8a，它是当前主流架构
+    implementation files('libs/onnxruntime-arm64-v8a.jar')
+    // 腾讯定位SDK依赖
+    implementation files('libs/TencentLocationSDK-v7.6.1.4-r3669751e0-20251112190552-release.aar')
+    // 分词库依赖
+    implementation 'com.huaban:jieba-analysis:1.0.2'
+}
